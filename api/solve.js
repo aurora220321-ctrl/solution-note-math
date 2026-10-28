@@ -1,3 +1,4 @@
+// api/solve.js
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST 요청만 지원합니다.' });
@@ -22,14 +23,27 @@ export default async function handler(req, res) {
       payload.systemInstruction = systemInstruction;
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    // v1 정식 엔드포인트로 호출
+    let response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       }
     );
+
+    // 만약 v1에서 404가 날 경우 v1beta gemini-1.5-flash-latest로 재시도
+    if (!response.ok && response.status === 404) {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+    }
 
     const data = await response.json();
 
