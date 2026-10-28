@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>풀이노트 | 고등 수학 AI 튜터</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- KaTeX for crisp Math LaTeX Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Google Fonts: Pretendard / Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+            hand: ['Nanum Pen Script', 'cursive'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#265446', /* 첨부 이미지의 세련된 딥 포레스트 그린 */
+              dark: '#1b3e33',
+              light: '#356d5b',
+              tag: '#E6F8F2',
+              tagText: '#108967'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* 수학 모눈종이(Grid) 배경 구현 */
+    body {
+      background-color: #f7fafc;
+      background-image: 
+        linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+      background-size: 24px 24px;
+      font-family: 'Pretendard', sans-serif;
+    }
+
+    /* 부드러운 스크롤 */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* 캔버스 드로잉 커서 */
+    #drawingCanvas {
+      touch-action: none;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between antialiased selection:bg-brand/20">
+
+  <!-- 메인 컨테이너 -->
+  <div class="max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 md:py-14">
+    
+    <!-- 헤더 섹션 (이미지 디자인 반영) -->
+    <header class="mb-8 select-none">
+      <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+          풀이노트
+        </h1>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-[#e6f7f2] text-[#128a67] border border-[#c1ede0]">
+          고등 수학
+        </span>
+      </div>
+      <p class="text-sm md:text-base text-slate-500 font-normal">
+        문제를 사진으로 찍거나 손글씨로 올리면 핵심 단계별 풀이를 제공합니다.
+      </p>
+    </header>
+
+    <!-- STEP 1 메인 카드 -->
+    <main class="bg-white rounded-3xl shadow-[0_10px_35px_-8px_rgba(0,0,0,0.06)] border border-slate-100 p-6 sm:p-10 transition-all duration-300">
+      
+      <!-- 카드 타이틀 및 스텝 인디케이터 -->
+      <div class="flex items-center justify-between pb-6">
+        <h2 class="text-xl font-bold text-slate-800">문제 입력하기</h2>
+        <span class="text-xs font-semibold text-slate-400 tracking-wider">STEP 1</span>
+      </div>
+
+      <!-- 세부 탭 컨트롤러 (사진 / 손글씨 / 직접 입력) -->
+      <div class="grid grid-cols-3 bg-slate-100/80 p-1.5 rounded-2xl mb-8 gap-1 select-none">
+        <button id="tabPhotoBtn" onclick="switchTab('photo')" class="tab-btn py-2.5 text-sm font-semibold rounded-xl transition-all shadow-sm bg-white text-slate-800">
+          <i class="fa-regular fa-image mr-1.5 opacity-70"></i>사진
+        </button>
+        <button id="tabDrawBtn" onclick="switchTab('draw')" class="tab-btn py-2.5 text-sm font-semibold rounded-xl transition-all text-slate-500 hover:text-slate-800">
+          <i class="fa-solid fa-pen-nib mr-1.5 opacity-70"></i>손글씨
+        </button>
+        <button id="tabTextBtn" onclick="switchTab('text')" class="tab-btn py-2.5 text-sm font-semibold rounded-xl transition-all text-slate-500 hover:text-slate-800">
+          <i class="fa-solid fa-keyboard mr-1.5 opacity-70"></i>직접 입력
+        </button>
+      </div>
+
+      <!-- 1. 사진 탭 영역 -->
+      <div id="tabPhoto" class="tab-content">
+        <div class="border-2 border-dashed border-slate-200 hover:border-emerald-300 rounded-3xl p-8 sm:p-12 text-center transition-all bg-slate-50/50 flex flex-col items-center justify-center min-h-[300px] relative">
+          
+          <!-- 미업로드 상태 -->
+          <div id="photoPlaceholder" class="flex flex-col items-center">
+            <h3 class="text-base sm:text-lg font-bold text-slate-800 mb-6">문제 사진을 올려 주세요</h3>
+            
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <!-- 카메라로 찍기 버튼 (모바일 환경에서 직접 카메라 구동) -->
+              <label class="cursor-pointer inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-brand text-white font-medium text-sm hover:bg-brand-dark transition-all active:scale-95 shadow-sm">
+                <i class="fa-solid fa-camera"></i>
+                <span>카메라로 찍기</span>
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(event)">
+              </label>
+
+              <!-- 사진 선택 버튼 -->
+              <label class="cursor-pointer inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium text-sm hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
+                <span>사진 선택</span>
+                <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)">
+              </label>
+            </div>
+            <p class="text-xs text-slate-400 mt-6 font-normal">
+              JPG, PNG, WEBP 등 지원 / 모바일 카메라 즉시 지원
+            </p>
+          </div>
+
+          <!-- 사진 미리보기 상태 (업로드 후 표시) -->
+          <div id="photoPreviewContainer" class="hidden w-full flex flex-col items-center">
+            <div class="relative max-w-md w-full rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-white">
+              <img id="imagePreview" src="" alt="문제 미리보기" class="w-full max-h-[320px] object-contain mx-auto bg-slate-50">
+              <button onclick="removeImage()" class="absolute top-3 right-3 bg-slate-900/70 hover:bg-slate-900 text-white rounded-full w-8 h-8 flex items-center justify-center backdrop-blur-sm transition-all" title="사진 지우기">
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+            <p class="text-xs text-emerald-600 font-medium mt-3 flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-check"></i> 사진이 준비되었습니다. 풀이를 시작해 보세요!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 손글씨 필기 탭 영역 -->
+      <div id="tabDraw" class="tab-content hidden">
+        <div class="border border-slate-200 rounded-3xl p-4 bg-slate-50/60">
+          <div class="flex items-center justify-between mb-3 px-1 flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-500 bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                수식 칠판
+              </span>
+              <span class="text-xs text-slate-400 hidden sm:inline">손가락이나 마우스로 수식을 적어보세요.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="setPenMode('pen')" id="penBtn" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand text-white transition-all">
+                <i class="fa-solid fa-pen mr-1"></i>펜
+              </button>
+              <button onclick="setPenMode('eraser')" id="eraserBtn" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-600 transition-all">
+                <i class="fa-solid fa-eraser mr-1"></i>지우개
+              </button>
+              <button onclick="clearCanvas()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-rose-500 hover:bg-rose-50 transition-all">
+                <i class="fa-solid fa-trash-can mr-1"></i>전체 지우기
+              </button>
+            </div>
+          </div>
+          
+          <!-- 필기용 캔버스 (부드러운 반응형 비율) -->
+          <div class="w-full bg-white rounded-2xl border border-slate-200 shadow-inner overflow-hidden relative" style="height: 280px;">
+            <canvas id="drawingCanvas" class="w-full h-full bg-white"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 직접 입력 탭 영역 -->
+      <div id="tabText" class="tab-content hidden">
+        <div class="border border-slate-200 rounded-3xl p-4 sm:p-5 bg-slate-50/50">
+          <label class="block text-xs font-bold text-slate-500 mb-2">문제 텍스트 입력</label>
+          <textarea id="mathTextInput" rows="7" 
+            placeholder="수학 문제를 직접 입력해주세요.&#10;예) 이차방정식 x^2 - 4x + 3 = 0 의 두 실근을 구하고, 두 근의 합과 곱을 이용해 풀이 과정을 서술하시오." 
+            class="w-full p-4 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand bg-white text-slate-800 text-sm leading-relaxed placeholder:text-slate-400 transition-all resize-none shadow-inner"></textarea>
+          <div class="mt-2 flex justify-between items-center text-xs text-slate-400">
+            <span>수학 기호, 한글 모두 자유롭게 작성 가능합니다.</span>
+            <button type="button" onclick="insertSampleQuestion()" class="text-brand font-medium hover:underline">
+              예시 문제 넣어보기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 하단 액션 버튼 (문제 풀이 시작하기 ->) -->
+      <div class="mt-8 flex justify-end">
+        <button id="solveBtn" onclick="startSolvingProcess()" 
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-brand text-white font-semibold text-base hover:bg-brand-dark active:scale-[0.98] transition-all shadow-md group">
+          <span>문제 풀이 시작하기</span>
+          <i class="fa-solid fa-arrow-right text-sm transition-transform group-hover:translate-x-1"></i>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- 로딩 스피너 및 진행 상태 카드 -->
+    <div id="loadingCard" class="hidden mt-8 bg-white rounded-3xl border border-slate-100 p-8 shadow-sm text-center">
+      <div class="inline-block animate-spin text-brand text-3xl mb-4">
+        <i class="fa-solid fa-circle-notch"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-800 mb-1">고등 수학 문제를 정밀 분석 중입니다...</h3>
+      <p class="text-sm text-slate-400">조건 정리, 적용 공식 도출 및 단계별 상세 해설을 작성하고 있습니다.</p>
+    </div>
+
+    <!-- STEP 2: 풀이 결과 뷰 (Solution Section) -->
+    <section id="solutionSection" class="hidden mt-8 space-y-6">
+      
+      <!-- 솔루션 카드 -->
+      <div class="bg-white rounded-3xl shadow-[0_10px_35px_-8px_rgba(0,0,0,0.06)] border border-slate-100 p-6 sm:p-10">
+        <div class="flex items-center justify-between pb-6 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h2 class="text-xl font-bold text-slate-800">단계별 풀이 해설</h2>
+          </div>
+          <span class="text-xs font-semibold text-slate-400 tracking-wider">STEP 2</span>
+        </div>
+
+        <!-- 파싱된 솔루션 렌더링 컨테이너 -->
+        <div id="solutionContainer" class="mt-6 space-y-6">
+          <!-- 동적으로 생성되는 솔루션 콘텐츠 -->
+        </div>
+
+        <!-- [핵심 기능 1]: '같은 유형의 문제 더 풀어보기' 버튼 바 -->
+        <div class="mt-10 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100">
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+              <i class="fa-solid fa-sparkles text-emerald-600"></i>
+              개념을 완벽하게 내 것으로 만들고 싶다면?
+            </h4>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+              방금 푼 문제와 유사한 쌍둥이/유형별 변형 문제를 AI가 직접 출제합니다.
+            </p>
+          </div>
+          
+          <button id="similarProblemBtn" onclick="generateSimilarProblem()" 
+            class="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all shadow-sm active:scale-95">
+            <i class="fa-solid fa-arrows-rotate"></i>
+            <span>같은 유형의 문제 더 풀어보기</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 유사 문제 생성 카드 -->
+      <div id="similarProblemCard" class="hidden bg-white rounded-3xl shadow-[0_10px_35px_-8px_rgba(0,0,0,0.06)] border border-slate-100 p-6 sm:p-10 transition-all">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+            실전 쌍둥이 연습 문제
+          </span>
+          <span class="text-xs text-slate-400 font-medium">유형별 자가 테스트</span>
+        </div>
+
+        <div id="similarProblemContent" class="py-6 text-slate-800 leading-relaxed text-base font-normal">
+          <!-- 유사 문제 본문 -->
+        </div>
+
+        <!-- 힌트 및 정답 토글 영역 -->
+        <div class="pt-4 border-t border-slate-100">
+          <button onclick="toggleSimilarAnswer()" id="toggleAnswerBtn" class="text-xs font-bold text-slate-600 hover:text-brand flex items-center gap-1.5 py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 transition-all">
+            <i class="fa-regular fa-lightbulb"></i>
+            <span>정답 및 해설 펼치기</span>
+          </button>
+          
+          <div id="similarAnswerContent" class="hidden mt-4 p-5 rounded-2xl bg-slate-50 border border-slate-200 text-sm space-y-3">
+            <!-- 유사 문제 정답 & 풀이 -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- 푸터 -->
+  <footer class="w-full text-center py-6 text-xs text-slate-400 border-t border-slate-200/50 bg-white/50 backdrop-blur-sm">
+    <p>© 2026 풀이노트 (고등 수학) • Vercel Ready Standalone App</p>
+  </footer>
+
+  <!-- 알림(Toast) 메시지 박스 (alert 대체) -->
+  <div id="toastBox" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 text-white text-sm font-medium px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3">
+    <i id="toastIcon" class="fa-solid fa-circle-info text-emerald-400"></i>
+    <span id="toastMessage">안내 메시지입니다.</span>
+  </div>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    /**
+     * =========================================================================
+     * [설정] GEMINI API KEY 직접 연동
+     * =========================================================================
+     * 사용자가 별도 키를 입력할 필요가 없도록 빈 문자열("")로 유지하면 Canvas 런타임 환경에서
+     * 자동으로 주입되며, Vercel 정적 배포 시 본인의 Google AI Studio API 키를
+     * const GEMINI_API_KEY = "AIzaSy..."; 형태로 따옴표 안에 넣어 배포하시면 됩니다.
+     */
+    const GEMINI_API_KEY = ""; 
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
+
+    // 전역 상태 변수
+    let currentTab = 'photo';
+    let uploadedImageBase64 = null;
+    let uploadedImageMime = 'image/png';
+    let lastProblemContext = ""; // '같은 유형의 문제 더 풀어보기'를 위한 컨텍스트 저장
+
+    // 캔버스 드로잉 관련 변수
+    let canvas, ctx;
+    let isDrawing = false;
+    let currentMode = 'pen'; // 'pen' | 'eraser'
+    let hasDrawnSomething = false;
+
+    // 윈도우 로드 시 초기화
+    window.onload = function() {
+      initCanvas();
+      window.addEventListener('resize', handleCanvasResize);
+    };
+
+    /**
+     * 커스텀 토스트 알림창
+     */
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toastBox');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = msg;
+      if (isError) {
+        toastIcon.className = "fa-solid fa-triangle-exclamation text-rose-400";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 3500);
+    }
+
+    /**
+     * 탭 전환 (사진, 손글씨, 직접 입력)
+     */
+    function switchTab(tabId) {
+      currentTab = tabId;
+      const tabs = ['photo', 'draw', 'text'];
+      
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab${capitalize(t)}Btn`);
+        const content = document.getElementById(`tab${capitalize(t)}`);
+        
+        if (t === tabId) {
+          btn.className = "tab-btn py-2.5 text-sm font-semibold rounded-xl transition-all shadow-sm bg-white text-slate-800";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "tab-btn py-2.5 text-sm font-semibold rounded-xl transition-all text-slate-500 hover:text-slate-800";
+          content.classList.add('hidden');
+        }
+      });
+
+      if (tabId === 'draw') {
+        setTimeout(handleCanvasResize, 50);
+      }
+    }
+
+    function capitalize(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    /**
+     * 사진 업로드 및 카메라 촬영 처리
+     */
+    function handleImageSelected(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('이미지 파일만 업로드할 수 있습니다.', true);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const fullDataUrl = evt.target.result;
+        uploadedImageMime = file.type || 'image/png';
+        uploadedImageBase64 = fullDataUrl.split(',')[1];
+
+        // 뷰 갱신
+        document.getElementById('imagePreview').src = fullDataUrl;
+        document.getElementById('photoPlaceholder').classList.add('hidden');
+        document.getElementById('photoPreviewContainer').classList.remove('hidden');
+        showToast('사진이 등록되었습니다.');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeImage() {
+      uploadedImageBase64 = null;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('cameraInput').value = '';
+      document.getElementById('imagePreview').src = '';
+      document.getElementById('photoPlaceholder').classList.remove('hidden');
+      document.getElementById('photoPreviewContainer').classList.add('hidden');
+    }
+
+    /**
+     * 필기 캔버스 초기화
+     */
+    function initCanvas() {
+      canvas = document.getElementById('drawingCanvas');
+      if (!canvas) return;
+      ctx = canvas.getContext('2d');
+      handleCanvasResize();
+
+      // 마우스 이벤트
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseleave', stopDrawing);
+
+      // 터치(모바일) 이벤트
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        isDrawing = true;
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+      }, { passive: false });
+
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!isDrawing) return;
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.stroke();
+        hasDrawnSomething = true;
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', () => { isDrawing = false; });
+    }
+
+    function handleCanvasResize() {
+      if (!canvas) return;
+      const container = canvas.parentElement;
+      const tempImg = ctx ? canvas.toDataURL() : null;
+
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+
+      // 배경 흰색으로 채우기 (투명 방지)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      setPenMode(currentMode);
+
+      if (tempImg && hasDrawnSomething) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = tempImg;
+      }
+    }
+
+    function startDrawing(e) {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.stroke();
+      hasDrawnSomething = true;
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    function setPenMode(mode) {
+      currentMode = mode;
+      const penBtn = document.getElementById('penBtn');
+      const eraserBtn = document.getElementById('eraserBtn');
+
+      if (mode === 'pen') {
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        penBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand text-white transition-all";
+        eraserBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-600 transition-all";
+      } else {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 22;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        eraserBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand text-white transition-all";
+        penBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-600 transition-all";
+      }
+    }
+
+    function clearCanvas() {
+      if (!ctx || !canvas) return;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      hasDrawnSomething = false;
+      showToast('캔버스를 초기화했습니다.');
+    }
+
+    function insertSampleQuestion() {
+      document.getElementById('mathTextInput').value = "좌표평면 위의 두 점 A(1, 3), B(5, 7)을 잇는 선분 AB를 3:1로 내분하는 점 P의 좌표를 구하고, 원점에서 점 P까지의 거리를 구하시오.";
+      showToast('예시 문제가 입력되었습니다.');
+    }
+
+    /**
+     * =========================================================================
+     * 풀이 프로세스 시작 (Gemini API 호출)
+     * =========================================================================
+     */
+    async function startSolvingProcess() {
+      let parts = [];
+      let problemDescription = "";
+
+      // 1. 현재 탭별 페이로드 준비
+      if (currentTab === 'photo') {
+        if (!uploadedImageBase64) {
+          showToast('문제 사진을 촬영하거나 업로드해주세요.', true);
+          return;
+        }
+        parts.push({
+          inlineData: {
+            mimeType: uploadedImageMime,
+            data: uploadedImageBase64
+          }
+        });
+        problemDescription = "업로드된 문제 이미지";
+      } else if (currentTab === 'draw') {
+        if (!hasDrawnSomething) {
+          showToast('손글씨 캔버스에 수식을 먼저 적어주세요.', true);
+          return;
+        }
+        const canvasData = canvas.toDataURL('image/png').split(',')[1];
+        parts.push({
+          inlineData: {
+            mimeType: 'image/png',
+            data: canvasData
+          }
+        });
+        problemDescription = "손글씨로 작성된 문제";
+      } else {
+        const textVal = document.getElementById('mathTextInput').value.trim();
+        if (!textVal) {
+          showToast('문제 텍스트를 입력해주세요.', true);
+          return;
+        }
+        problemDescription = textVal;
+      }
+
+      // 프롬프트 구성: 한국 고등학교 수학 교육과정에 최적화된 마크다운 & LaTeX 구조화 지침
+      const systemInstruction = `당신은 대한민국 고등학교 수학 일타 강사이자 '풀이노트 고등 수학' 전담 AI 튜터입니다.
+주어진 문제를 정확하고 꼼꼼하게 풀이해주세요.
+
+반드시 다음의 명확한 섹션 규격으로 나누어 한국어로 친절하게 작성하세요:
+
+### [1] 문제 인식 및 핵심 개념
+- 문제에서 구하고자 하는 목표
+- 적용되는 핵심 공식 및 단원 개념 (수식은 $ 또는 $$ 로 감싸서 LaTeX 표현)
+
+### [2] 단계별 상세 풀이
+- Step 1: 조건 분석 및 식 세우기
+- Step 2: 연산 및 전개 과정 (상세한 수식 풀이 필수)
+- Step 3: 조건 검증 및 마무리
+
+### [3] 최종 정답
+- 최종 답안을 명확하게 박스 형태 또는 강조 표기로 명시 (예: $\\mathbf{답: 12}$)
+
+### [4] 오답 방지 꿀팁 & 출제 포인트
+- 수험생들이 자주 실수하는 함정이나 부호 실수 포인트 1~2가지 정리
+
+수식은 반드시 표준 LaTeX 포맷으로 작성하세요 (인라인 수식은 $...$, 블록 수식은 $$...$$).`;
+
+      const promptText = `다음 고등 수학 문제를 분석하고 체계적인 단계별 풀이를 제공해주세요.\n문제 내용:\n${problemDescription}`;
+      parts.push({ text: promptText });
+
+      // UI 로딩 상태 전환
+      const solveBtn = document.getElementById('solveBtn');
+      const loadingCard = document.getElementById('loadingCard');
+      const solutionSection = document.getElementById('solutionSection');
+      const similarProblemCard = document.getElementById('similarProblemCard');
+
+      solveBtn.disabled = true;
+      solveBtn.classList.add('opacity-60', 'cursor-not-allowed');
+      loadingCard.classList.remove('hidden');
+      solutionSection.classList.add('hidden');
+      similarProblemCard.classList.add('hidden');
+
+      try {
+        const payload = {
+          contents: [{
+            role: "user",
+            parts: parts
+          }],
+          systemInstruction: {
+            parts: [{ text: systemInstruction }]
+          }
+        };
+
+        const response = await fetchWithRetry(GEMINI_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        const candidate = data.candidates?.[0];
+        const solutionText = candidate?.content?.parts?.[0]?.text;
+
+        if (!solutionText) {
+          throw new Error('풀이 응답을 받아오지 못했습니다.');
+        }
+
+        // 결과 저장 및 렌더링
+        lastProblemContext = problemDescription + "\n\n[기존 문제 풀이]:\n" + solutionText;
+        renderSolution(solutionText);
+
+        solutionSection.classList.remove('hidden');
+        showToast('성공적으로 풀이를 완료했습니다!');
+        
+        // 결과 위치로 부드럽게 스크롤
+        solutionSection.scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        console.error(err);
+        showToast('문제 풀이 중 오류가 발생했습니다: ' + (err.message || '네트워크 상태를 확인해주세요.'), true);
+      } finally {
+        solveBtn.disabled = false;
+        solveBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        loadingCard.classList.add('hidden');
+      }
+    }
+
+    /**
+     * 지수 백오프(Exponential Backoff)가 적용된 fetch 유틸
+     */
+    async function fetchWithRetry(url, options, maxRetries = 3) {
+      let delay = 1000;
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          const res = await fetch(url, options);
+          if (res.ok) return res;
+          if (res.status === 429) { // Rate limit
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+            continue;
+          }
+          return res;
+        } catch (e) {
+          if (i === maxRetries - 1) throw e;
+          await new Promise(r => setTimeout(r, delay));
+          delay *= 2;
+        }
+      }
+      return fetch(url, options);
+    }
+
+    /**
+     * 솔루션 텍스트 마크다운 & 수식 파싱 렌더링
+     */
+    function renderSolution(markdown) {
+      const container = document.getElementById('solutionContainer');
+      container.innerHTML = parseMarkdownToHtml(markdown);
+      
+      // KaTeX 자동 수식 렌더링 적용
+      if (window.renderMathInElement) {
+        renderMathInElement(container, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\[', right: '\\]', display: true },
+            { left: '\\(', right: '\\)', display: false }
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
+    /**
+     * 간단하고 미려한 마크다운 HTML 변환기
+     */
+    function parseMarkdownToHtml(md) {
+      let html = md;
+
+      // 제목 변환
+      html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-slate-800 mt-6 mb-3 pb-2 border-b border-slate-100 flex items-center gap-2"><i class="fa-solid fa-bookmark text-brand text-sm"></i> $1</h3>');
+      html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-slate-900 mt-7 mb-4">$1</h2>');
+
+      // 볼드 처리
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>');
+
+      // 목록 변환
+      html = html.replace(/^\- (.*$)/gim, '<li class="ml-4 list-disc text-slate-700 my-1.5 leading-relaxed">$1</li>');
+
+      // 줄바꿈 보정 (수식 블록 제외 보존)
+      html = html.replace(/\n\n/g, '<div class="h-3"></div>');
+      html = html.replace(/\n/g, '<br>');
+
+      return `<div class="solution-text text-sm sm:text-base leading-relaxed text-slate-700">${html}</div>`;
+    }
+
+    /**
+     * =========================================================================
+     * [핵심 기능 1]: 같은 유형의 문제 더 풀어보기 (AI 유사 문제 생성)
+     * =========================================================================
+     */
+    async function generateSimilarProblem() {
+      const simBtn = document.getElementById('similarProblemBtn');
+      const simCard = document.getElementById('similarProblemCard');
+      const simContent = document.getElementById('similarProblemContent');
+      const simAnswerContent = document.getElementById('similarAnswerContent');
+      const toggleAnswerBtn = document.getElementById('toggleAnswerBtn');
+
+      if (!lastProblemContext) {
+        showToast('먼저 기본 문제 풀이를 진행해주세요.', true);
+        return;
+      }
+
+      simBtn.disabled = true;
+      simBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i><span>유사 문제 생성 중...</span>`;
+
+      const prompt = `앞서 풀이한 수학 문제의 유형, 출제 단원, 핵심 논리를 분석하여, 학생이 스스로 실력을 점검할 수 있는 "동일 유형의 변형 연습 문제(쌍둥이 문제)"를 1문항 만들어주세요.
+
+반드시 다음 형식으로 명확히 구분하여 답변하세요:
+
+[문제]
+(여기에 문제 본문과 구하려는 값을 친절하고 명확하게 서술. 수식은 LaTeX로 $...$ 또는 $$...$$ 사용)
+
+[정답 및 해설]
+- 정답: (최종 정답)
+- 빠른 풀이: (핵심 전개 과정과 단계별 해설을 명료하게 요약)`;
+
+      try {
+        const payload = {
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `이전 문제 정보:\n${lastProblemContext}\n\n${prompt}` }]
+            }
+          ]
+        };
+
+        const res = await fetchWithRetry(GEMINI_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!text) {
+          throw new Error('유사 문제를 생성하지 못했습니다.');
+        }
+
+        // 문제와 정답 분리 파싱
+        let questionPart = text;
+        let answerPart = "정답 및 해설이 준비되지 않았습니다.";
+
+        if (text.includes('[정답 및 해설]')) {
+          const split = text.split('[정답 및 해설]');
+          questionPart = split[0].replace('[문제]', '').trim();
+          answerPart = split[1].trim();
+        } else if (text.includes('정답 및 해설')) {
+          const split = text.split('정답 및 해설');
+          questionPart = split[0].replace('[문제]', '').trim();
+          answerPart = split[1].trim();
+        }
+
+        // 뷰 렌더링
+        simContent.innerHTML = parseMarkdownToHtml(questionPart);
+        simAnswerContent.innerHTML = parseMarkdownToHtml(answerPart);
+
+        // 힌트 영역 초기 상태 닫힘 유지
+        simAnswerContent.classList.add('hidden');
+        toggleAnswerBtn.innerHTML = `<i class="fa-regular fa-lightbulb"></i><span>정답 및 해설 펼치기</span>`;
+
+        // KaTeX 수식 렌더링
+        if (window.renderMathInElement) {
+          renderMathInElement(simContent, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false }
+            ],
+            throwOnError: false
+          });
+          renderMathInElement(simAnswerContent, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false }
+            ],
+            throwOnError: false
+          });
+        }
+
+        simCard.classList.remove('hidden');
+        simCard.scrollIntoView({ behavior: 'smooth' });
+        showToast('유사 문제가 생성되었습니다! 직접 풀어보세요.');
+
+      } catch (err) {
+        console.error(err);
+        showToast('유사 문제 생성 중 오류가 발생했습니다: ' + err.message, true);
+      } finally {
+        simBtn.disabled = false;
+        simBtn.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i><span>같은 유형의 문제 더 풀어보기</span>`;
+      }
+    }
+
+    /**
+     * 유사 문제 정답 토글
+     */
+    function toggleSimilarAnswer() {
+      const content = document.getElementById('similarAnswerContent');
+      const btn = document.getElementById('toggleAnswerBtn');
+      const isHidden = content.classList.contains('hidden');
+
+      if (isHidden) {
+        content.classList.remove('hidden');
+        btn.innerHTML = `<i class="fa-solid fa-chevron-up"></i><span>정답 및 해설 접기</span>`;
+      } else {
+        content.classList.add('hidden');
+        btn.innerHTML = `<i class="fa-regular fa-lightbulb"></i><span>정답 및 해설 펼치기</span>`;
+      }
+    }
+  </script>
+</body>
+</html>
